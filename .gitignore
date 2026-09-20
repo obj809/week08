@@ -197,3 +197,27 @@ cython_debug/
 .cursorindexingignore
 
 node_modules/
+# Terraform — state embeds the storage account key, never commit
+# Paths are relative to this .gitignore, which sits in wk08/week08/
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+override.tf
+
+# Local credential and working notes — never commit
+storage-connection-string.md
+azure-portal/
+
+# Personal working notes and evidence — not part of the forked project
+WALKTHROUGH-STEP-*.md
+EVIDENCE-CHECKLIST.md
+SUBMISSION-PARTS.md
+WRITTEN-ANSWERS.md
+screenshots/
+
+azure-portal/azure-credentials.json

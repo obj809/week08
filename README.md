@@ -4,9 +4,9 @@ In Week 07, we implemented a Continuous Integration (CI) pipeline using GitHub A
 
 In Week 08, we extend this workflow to implement **Continuous Delivery (CD)**.
 
-The application will first be automatically deployed to a **staging environment**. After deployment, automated tests will verify that the staging application is working correctly. A tested version can then be manually promoted to the **production environment**.
+The application will first be automatically deployed to a **staging environment**. After deployment, an automated HTTP smoke test checks the staging frontend root. Manual functional checks must verify the backend services and photo storage. A tested version can then be manually promoted to the **production environment**.
 
-The same Docker images that are tested in staging are deployed to production. The application is **not rebuilt** during production deployment.
+Production is intended to reuse the SHA-tagged images validated in staging. The application is **not rebuilt** by the production workflow. Tags can be overwritten, so compare all six running image digests to establish that the artifacts match; see [Step 4 §4e](WALKTHROUGH-STEP-4.md#4e-production-verification).
 
 ---
 
@@ -26,7 +26,7 @@ Production deployment is intentionally manual.
 
 Create the Terraform infrastructure files using the same approach demonstrated in **Week 06**.
 
-The infrastructure should provide the Azure resources required by the application, including the Kubernetes infrastructure, Azure Container Registry, and Azure Storage configuration used by the application.
+The infrastructure should provide the resource group, ACR, AKS and Storage Account. Week 06 Terraform creates private `student-profile-photos` and `lecturer-profile-photos` containers; the corrected staging and production manifests explicitly use those plural names. See [Step 1](WALKTHROUGH-STEP-1.md) for the configuration plan. Terraform files still need to be created for Week 08 before provisioning.
 
 ### Important AKS Change
 
@@ -213,7 +213,7 @@ DEFAULT_ADMIN_PASSWORD = AdminPassword123!
 AZURE_STORAGE_CONNECTION_STRING = <YOUR_STORAGE_ACCOUNT_CONNECTION_STRING>
 ```
 
-Staging and production therefore have independent environment configuration.
+Staging and production have separately scoped GitHub configuration and independent PostgreSQL databases/PVCs. The example values match, and both environments share the Blob storage account and containers. Use environment-appropriate credentials; sharing storage does not require matching database or JWT secrets.
 
 ---
 
@@ -266,13 +266,13 @@ Verify that the following workflows complete successfully:
 
 01 - CI
 02 - Deploy to Staging
-03 - Staging Test
+03 - Test Staging
 
 Once the deployment is complete, verify the Kubernetes resources in the staging namespace and access the staging application using the frontend external IP.
 
 Confirm that the application is working correctly before proceeding to production.
 
-13. Deploy to Production
+# 13. Deploy to Production
 
 Production deployment is performed manually.
 
@@ -293,16 +293,16 @@ Before running the production workflow, obtain the Git commit SHA of the version
 git rev-parse HEAD
 ```
 
-Copy the returned SHA and provide it as the `image_tag` when manually running the **04 - Deploy to Production** workflow.
+Use the SHA from the successful CI run that supplied the staging images. `git rev-parse HEAD` is valid only when local HEAD matches that run. Cross-check it against the staging image references and validation evidence, then provide it as `image_tag`.
 
-> Make sure the SHA belongs to the version that successfully passed the staging pipeline.
+> Make sure the SHA belongs to the version that successfully passed the staging pipeline. Workflow 04 does not enforce this. It also checks out the selected dispatch ref rather than `image_tag`, so avoid intervening commits and overlapping deployments during the practical.
 
 
 Run the production workflow and verify that it completes successfully.
 
 Important: Production must use the same image version that was tested in staging. Do not rebuild the Docker images for production.
 
-14. Verify the Production Application
+# 14. Verify the Production Application
 
 After the production deployment completes:
 
@@ -311,3 +311,20 @@ After the production deployment completes:
 - Access the production application.
 - Confirm that the application is working correctly.
 - Verify that production is running the same image SHA that was tested in staging.
+- Compare the six running application image digests against the snapshot saved at staging validation.
+- Exercise login/users, students, lecturers, courses, enrolments and both photo-upload paths.
+
+# 15. Evidence and Cleanup
+
+The task requires a report covering workflow analysis (including the Davis
+comparison), pipeline screenshots with explanations, reflection and cleanup.
+[EVIDENCE-CHECKLIST.md](EVIDENCE-CHECKLIST.md) maps suggested captures to those
+requirements; its IDs are planning aids, not individually mandated screenshots.
+[SUBMISSION-PARTS.md](SUBMISSION-PARTS.md) tracks draft versus outstanding evidence.
+
+Capture live application/resource evidence before deleting resources. Follow
+[Step 4 §4f](WALKTHROUGH-STEP-4.md#4f-resource-cleanup) to remove the infrastructure,
+verify both resource groups are gone, remove the dedicated service principal and
+application created outside Terraform, and clear obsolete GitHub secrets.
+Record any permission failure and its resolution; do not claim cleanup solely
+because Terraform reports an empty state.
