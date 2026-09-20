@@ -49,7 +49,7 @@ spec:
                   name: application-secret
                   key: AZURE_STORAGE_CONNECTION_STRING
             - name: AZURE_STORAGE_CONTAINER_NAME
-              value: lecturer-profile-photo
+              value: lecturer-profile-photos
 
 ---
 apiVersion: v1
